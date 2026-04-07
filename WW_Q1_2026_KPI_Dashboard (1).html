@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>WW 2026 — Q1 KPI Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&display=swap" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #ffffff;
+    --bg-secondary: #f5f4f0;
+    --bg-info: #e6f1fb;
+    --text: #1a1a18;
+    --text-secondary: #5f5e5a;
+    --text-tertiary: #888780;
+    --text-info: #185fa5;
+    --border: rgba(26,26,24,0.12);
+    --border-secondary: rgba(26,26,24,0.25);
+    --border-info: rgba(24,95,165,0.35);
+    --radius-sm: 8px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --green: #3B6D11;
+    --amber: #BA7517;
+    --red: #E24B4A;
+    --gray: #B4B2A9;
+    --blue: #185FA5;
+    --green-bg: #EAF3DE;
+    --amber-bg: #FAEEDA;
+    --purple-bg: #EEEDFE;
+    --purple: #3C3489;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1c1a;
+      --bg-secondary: #252523;
+      --bg-info: #0c2a47;
+      --text: #f0ede8;
+      --text-secondary: #b4b2a9;
+      --text-tertiary: #73726c;
+      --text-info: #85b7eb;
+      --border: rgba(240,237,232,0.1);
+      --border-secondary: rgba(240,237,232,0.2);
+      --border-info: rgba(133,183,235,0.3);
+      --green: #97C459;
+      --amber: #EF9F27;
+      --red: #F09595;
+      --gray: #888780;
+      --blue: #85b7eb;
+      --green-bg: #173404;
+      --amber-bg: #412402;
+      --purple-bg: #26215C;
+      --purple: #AFA9EC;
+    }
+  }
+  body {
+    font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg-secondary);
+    color: var(--text);
+    font-size: 14px;
+    min-height: 100vh;
+  }
+  .page { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+  /* Top bar */
+  .topbar { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 12px; }
+  .topbar-left h1 { font-size: 20px; font-weight: 500; color: var(--text); }
+  .topbar-left p { font-size: 12px; color: var(--text-tertiary); margin-top: 3px; }
+  .connect-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .sheet-input {
+    font-size: 12px; padding: 7px 10px;
+    border: 0.5px solid var(--border-secondary);
+    border-radius: var(--radius-sm);
+    background: var(--bg); color: var(--text);
+    width: 280px; outline: none;
+  }
+  .sheet-input::placeholder { color: var(--text-tertiary); }
+  .sheet-input:focus { border-color: var(--border-info); box-shadow: 0 0 0 3px rgba(24,95,165,0.1); }
+  .btn {
+    font-size: 12px; padding: 7px 13px; cursor: pointer;
+    border: 0.5px solid var(--border-secondary);
+    border-radius: var(--radius-sm);
+    background: transparent; color: var(--text-secondary);
+    transition: background 0.15s;
+  }
+  .btn:hover { background: var(--bg-secondary); }
+  .btn-primary { background: var(--bg-info); color: var(--text-info); border-color: var(--border-info); }
+  .btn-primary:hover { opacity: 0.85; }
+  .sync-note { font-size: 11px; color: var(--text-tertiary); margin-top: 4px; text-align: right; }
+
+  /* Summary */
+  .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 1.25rem; }
+  .sum-card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-md); padding: 14px 16px; text-align: center; }
+  .sum-val { font-size: 28px; font-weight: 500; }
+  .sum-label { font-size: 11px; color: var(--text-tertiary); margin-top: 2px; }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 0; flex-wrap: wrap; border-bottom: 0.5px solid var(--border); margin-bottom: 1.25rem; }
+  .tab {
+    font-size: 13px; padding: 8px 16px; cursor: pointer;
+    border: none; background: transparent;
+    color: var(--text-tertiary);
+    border-bottom: 2px solid transparent;
+    margin-bottom: -0.5px; transition: color 0.15s;
+    font-family: inherit;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--text); font-weight: 500; border-bottom-color: var(--text); }
+
+  /* Panels */
+  .dept-panel { display: none; }
+  .dept-panel.active { display: block; }
+  .panel-top { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+  .mini-stat {
+    background: var(--bg); border: 0.5px solid var(--border);
+    border-radius: var(--radius-sm); padding: 7px 12px;
+    font-size: 11px; color: var(--text-secondary);
+    display: flex; align-items: center; gap: 5px;
+  }
+  .mini-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .panel-body { display: grid; grid-template-columns: 1fr 340px; gap: 12px; align-items: start; }
+  .okr-col {}
+  .okr-group { margin-bottom: 14px; }
+  .okr-label {
+    font-size: 10px; letter-spacing: .07em; text-transform: uppercase;
+    font-weight: 500; color: var(--text-tertiary);
+    margin-bottom: 6px; padding-bottom: 5px;
+    border-bottom: 0.5px solid var(--border);
+  }
+  .kpi-list { display: flex; flex-direction: column; gap: 5px; }
+  .kpi-row-item {
+    background: var(--bg); border: 0.5px solid var(--border);
+    border-radius: var(--radius-sm); padding: 9px 12px;
+    display: flex; align-items: center; gap: 9px;
+    transition: border-color 0.15s;
+  }
+  .kpi-row-item:hover { border-color: var(--border-secondary); }
+  .kpi-status-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .kpi-info { flex: 1; min-width: 0; }
+  .kpi-name { font-size: 12px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .kpi-sub { font-size: 10px; color: var(--text-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+  .kpi-right { text-align: right; flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
+  .kpi-actual { font-size: 12px; font-weight: 500; color: var(--text); }
+  .pill { font-size: 9px; font-weight: 500; padding: 2px 6px; border-radius: 20px; white-space: nowrap; }
+  .pill-process { background: var(--bg-info); color: var(--text-info); }
+  .pill-profitability { background: var(--green-bg); color: var(--green); }
+  .pill-people { background: var(--purple-bg); color: var(--purple); }
+
+  /* Chart panel */
+  .chart-col {
+    background: var(--bg); border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg); padding: 16px;
+    position: sticky; top: 1.5rem;
+  }
+  .chart-head { font-size: 12px; font-weight: 500; color: var(--text); margin-bottom: 10px; }
+  .legend { display: flex; gap: 10px; font-size: 10px; color: var(--text-secondary); margin-bottom: 10px; flex-wrap: wrap; }
+  .legend span { display: flex; align-items: center; gap: 3px; }
+  .leg-sq { width: 8px; height: 8px; border-radius: 1px; display: inline-block; }
+
+  /* Status colors */
+  .s-green { color: var(--green); }
+  .s-amber { color: var(--amber); }
+  .s-red { color: var(--red); }
+  .s-gray { color: var(--gray); }
+
+  /* Responsive */
+  @media (max-width: 700px) {
+    .panel-body { grid-template-columns: 1fr; }
+    .chart-col { position: static; }
+    .summary-grid { grid-template-columns: repeat(2, 1fr); }
+    .sheet-input { width: 200px; }
+  }
+  @media (max-width: 420px) {
+    .page { padding: 1rem; }
+    .summary-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="topbar">
+    <div class="topbar-left">
+      <h1>Q1 2026 — KPI Dashboard</h1>
+      <p id="syncNote">Showing embedded CSV data</p>
+    </div>
+    <div>
+      <div class="connect-row">
+        <input class="sheet-input" id="sheetUrl" placeholder="Paste Google Sheets CSV link to go live…" />
+        <button class="btn btn-primary" onclick="connectSheet()">Connect sheet</button>
+        <button class="btn" onclick="refresh()" title="Refresh">↺</button>
+      </div>
+      <div class="sync-note" id="lastSync">Paste your published CSV URL above to enable live sync</div>
+    </div>
+  </div>
+
+  <div class="summary-grid" id="summaryGrid"></div>
+  <div class="tabs" id="tabBar"></div>
+  <div id="panels"></div>
+
+</div>
+
+<script>
+// ─── DATA ───────────────────────────────────────────────────────────────────
+const EMBEDDED_CSV = `Department,KPI,OKR,Definition,Target,Actual,Status,Trend,Integrity Check
+Marketing,Inbound Lead Volume,Marketing Growth,"The reach of each marketing effort",,Establishing process and baseline,,,Process
+Marketing,Conversion Rate,Marketing Growth,How good are our website and landing pages at turning visitors to leads?,,Establishing process and baseline in Q1,,,Process
+Marketing,Marketing Qualified Leads,Marketing Growth,Leads reviewed against the Ideal Consumer Profile,,Refining ICP in Q1; not applied yet,,,Process
+Marketing,Cost per Acquisition,Marketing Growth,For example; webinar,,Need to gather financial info on ALL marketing efforts,,,Profitability
+Marketing,MQL-to-SQL Conversion Rate,Marketing Growth,The percentage of marketing leads the sales team accepts as ready to buy.,,Reviewing and assigning lead source,,,Process
+Marketing,Average Revenue per Client,Marketing Growth,Which marketing efforts attract high value clients?,,Need to gather financial info on ALL marketing efforts,,,Profitability
+Marketing,Lead Response Time,Sales Operations & Growth,Time it takes to reach out to a potential client after they submit an inquiry.,,,,,Process
+Marketing,Satisfaction Rate,Events & Upskilling,How satisfied were the attendants with the value provided in the seminar?,,,,,People
+Marketing,Participation Rate,Events & Upskilling,% of the team that actually joined the event,,,,,People
+Marketing,Skill Application Rate,Events & Upskilling,How likely are members able to apply what they learned?,,,,,People
+Sales,Talk Time per Call,Sales Operations & Growth,Average length of time a sales caller spends talking with a prospect.,30 minutes,,,,Process
+Sales,Lead-to-client conversion,Sales Operations & Growth,Percentage of leads successfully converted into sales opportunities.,30%,,,,Profitability
+Sales,Revenue per Call,Sales Operations & Growth,Average amount of the package closed from each sales call made.,,,,,Profitability
+Sales,Close Rate,Sales Operations & Growth,Percentage of calls that result in a successful sale.,50%,7:12:00,,,Process
+Sales,Renewal Rate,Renewal & Retention,Percentage of clients who decide to continue when their contract ends.,,,,,Profitability
+Sales,Sales-Related Churn,Renewal & Retention,Client leaves within first 30 days of account start,,,,,Profitability
+Sales,Churn Rate by Source,Marketing Growth,Which lead source brings the stayers?,,Establishing process and baseline,,,Profitability
+Sales,Proposal turnaround,Sales Operations & Growth,How fast are we sending proposals after initial discovery session?,,,,,Process
+Sales,Process Compliance,Sales Operations & Growth,Was follow-up sequence initiated?,,,,,Process
+Sales,Internal Hand-off Lag,Sales Operations & Growth,Time from client concern received to forwarded to internal channel.,< 1 hour,2:00:00,,,Process
+Sales,Onboarding satisfaction,Renewal & Retention,Overall score: On a scale of 1-10 how smooth was the onboarding process?,,,,,People
+Human Resources,Time to hire,Recruitment & Fit,Speed of selection,0.08,3 days,,,Process
+Human Resources,Time to start,Recruitment & Fit,Speed of readiness,2 weeks,Within target,,,Process
+Human Resources,Placement fit rating,Recruitment & Fit,Did we put the right person in the right seat with the right tools?,,Establishing baseline,,,People
+Human Resources,Recruitment & training satisfaction,Recruitment & Fit,,>8.5,228:00:00,,,People
+Human Resources,VA Retention,Engagement & Retention,,,Above 90%,,,Profitability
+Human Resources,Employee Satisfaction,Engagement & Retention,,,To be sent out end of Q1,,,People
+Human Resources,Resolution Time,Engagement & Retention,,90% concerns resolved within 5 days,,,,Process
+Human Resources,Timesheet compliance,HR Operations,Percentage of VAs who submit time logs by deadline without errors.,,,,,Process
+Human Resources,Payroll accuracy,HR Operations,Percentage of VA paychecks calculated correctly.,>90%,22:19:12,,,Profitability
+Human Resources,Response Time,HR Operations,Time for HR team to respond to a VA inquiry.,<48 hours,Met targets,,,People
+Human Resources,Database turnaround time,HR Operations,,<24 hours,,,,Process
+Operations,Client Satisfaction,Client Experience,How satisfied was the client with the support their VA has provided?,,To be sent out end of Q1,,,People
+Operations,Mean time to Resolve,Client Experience,Average time it takes for issues to be resolved.,,End of Q1,,,Process
+Operations,Retention Rate,Client Experience,Measures if VA performance dropped or communication was poor.,,End of Q1,,,Profitability
+Operations,VA performance,VA Management,,,End of Q1,,,People
+Operations,Issues resolved,VA Management,,,End of Q1,,,Process
+Operations,Monthly check-in compliance,VA Management,Percentage of active VAs with a documented 1-on-1 with their Team Leader.,100%,< 0.9,,,Process
+Operations,Process adherence,Efficiency,Evaluate Team Leads on compliance with core processes using a strike system.,,,,,Process
+Operations,Escalation rate,Efficiency,,,12:00:00,,,People
+Operations,Proactive Detection Rate,Efficiency,Percentage of issues identified internally versus those that reached the client.,>70%,,,,Process
+Operations,Renewal Rate,Renewal (After Sales),Percentage of clients who decide to continue when their contract ends.,,,,,Profitability
+Finance,Monthly reports,Reporting Accuracy,Pre- and Post-Payout reports turnover,Within 5 working days,On track,,,Process
+Finance,Accuracy,Reporting Accuracy,Percentage of financial entries or invoices issued without errors.,,On track,,,Profitability
+Finance,Xero Reconciliation,Reporting Accuracy,Accurate reporting for financial standing,95%,On track (waiting for dependencies),,,Process
+Finance,Documentation completeness,Financial Hygiene,,,,,,Process
+Finance,Workflow improvements/quarter,Financial Hygiene,How did we reduce cost?,1 per quarter,,,,Process
+Finance,Reduce revisions,Financial Hygiene,Percentage of invoices or reports that pass the first review.,,,,,Process
+Finance,Query response time,Internal Support,Average time for Finance to answer a Client about their invoice.,,On track,,,People
+Finance,Efficiency Ratio,Internal Support,Internal hours vs client hours,<30%,9:15:42,,,Profitability`;
+
+// ─── STATE ──────────────────────────────────────────────────────────────────
+let currentData = [];
+let activeTab = 0;
+let liveInterval = null;
+let charts = [];
+
+// ─── CSV PARSER ─────────────────────────────────────────────────────────────
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  const headers = splitLine(lines[0]).map(h => h.replace(/^"|"$/g, '').trim().toLowerCase());
+  return lines.slice(1).map(line => {
+    const vals = splitLine(line).map(v => v.replace(/^"|"$/g, '').trim());
+    if (vals.every(v => !v)) return null;
+    const o = {};
+    headers.forEach((h, i) => o[h] = vals[i] || '');
+    return (o.department || o.kpi) ? o : null;
+  }).filter(Boolean);
+}
+
+function splitLine(line) {
+  const r = []; let c = '', q = false;
+  for (const ch of line) {
+    if (ch === '"') { q = !q; }
+    else if (ch === ',' && !q) { r.push(c); c = ''; }
+    else c += ch;
+  }
+  r.push(c); return r;
+}
+
+// ─── STATUS LOGIC ───────────────────────────────────────────────────────────
+function statusOf(r) {
+  const a = (r.actual || '').trim().toLowerCase();
+  const s = (r.status || '').trim().toLowerCase();
+  if (!a && !s) return { cls: 'gray', label: 'Pending' };
+  const good = ['on track', 'met', 'within', 'above', 'exceeded', 'complete', 'good'];
+  const warn = ['at risk', 'below', 'risk', 'establishing', 'refining', 'reviewing', 'need to gather'];
+  const bad  = ['off track', 'missed', 'critical', 'fail'];
+  if (bad.some(k => s.includes(k)))  return { cls: 'red',   label: 'Off track' };
+  if (warn.some(k => s.includes(k) || a.includes(k))) return { cls: 'amber', label: 'In progress' };
+  if (good.some(k => s.includes(k) || a.includes(k))) return { cls: 'green', label: 'On track' };
+  if (a && a !== '0') return { cls: 'amber', label: 'In progress' };
+  return { cls: 'gray', label: 'Pending' };
+}
+
+const dotColor = cls => ({ green: '#3B6D11', amber: '#BA7517', red: '#E24B4A', gray: '#B4B2A9' }[cls]);
+const dotColorDark = cls => ({ green: '#97C459', amber: '#EF9F27', red: '#F09595', gray: '#888780' }[cls]);
+const isDark = () => window.matchMedia('(prefers-color-scheme: dark)').matches;
+const dc = cls => isDark() ? dotColorDark(cls) : dotColor(cls);
+
+function intPill(v) {
+  if (!v) return '';
+  const cls = v === 'Process' ? 'pill-process' : v === 'Profitability' ? 'pill-profitability' : 'pill-people';
+  return `<span class="pill ${cls}">${v}</span>`;
+}
+
+// ─── RENDER ─────────────────────────────────────────────────────────────────
+function renderAll(data) {
+  currentData = data;
+  const depts = [...new Set(data.map(r => r.department).filter(Boolean))];
+  renderSummary(data);
+  renderTabs(depts);
+  renderPanels(data, depts);
+}
+
+function renderSummary(data) {
+  let total = 0, on = 0, prog = 0, pend = 0;
+  data.forEach(r => {
+    total++;
+    const s = statusOf(r);
+    if (s.cls === 'green') on++;
+    else if (s.cls === 'amber' || s.cls === 'red') prog++;
+    else pend++;
+  });
+  document.getElementById('summaryGrid').innerHTML = `
+    <div class="sum-card"><div class="sum-val">${total}</div><div class="sum-label">Total KPIs</div></div>
+    <div class="sum-card"><div class="sum-val s-green">${on}</div><div class="sum-label">On track</div></div>
+    <div class="sum-card"><div class="sum-val s-amber">${prog}</div><div class="sum-label">In progress</div></div>
+    <div class="sum-card"><div class="sum-val s-gray">${pend}</div><div class="sum-label">Pending</div></div>`;
+}
+
+function renderTabs(depts) {
+  document.getElementById('tabBar').innerHTML = depts.map((d, i) =>
+    `<button class="tab${i === activeTab ? ' active' : ''}" onclick="switchTab(${i})">${d}</button>`
+  ).join('');
+}
+
+function switchTab(i) {
+  activeTab = i;
+  document.querySelectorAll('.tab').forEach((t, idx) => t.classList.toggle('active', idx === i));
+  document.querySelectorAll('.dept-panel').forEach((p, idx) => p.classList.toggle('active', idx === i));
+  charts.forEach(c => { try { c.resize(); } catch(e) {} });
+}
+
+function renderPanels(data, depts) {
+  charts.forEach(c => { try { c.destroy(); } catch(e) {} });
+  charts = [];
+  const container = document.getElementById('panels');
+  container.innerHTML = '';
+
+  depts.forEach((dept, di) => {
+    const rows = data.filter(r => r.department === dept);
+    const counts = { green: 0, amber: 0, red: 0, gray: 0 };
+    rows.forEach(r => { const s = statusOf(r); counts[s.cls]++; });
+    const okrMap = {};
+    rows.forEach(r => {
+      const o = r.okr || 'General';
+      if (!okrMap[o]) okrMap[o] = [];
+      okrMap[o].push(r);
+    });
+
+    const panel = document.createElement('div');
+    panel.className = 'dept-panel' + (di === activeTab ? ' active' : '');
+
+    const okrLabels = Object.keys(okrMap);
+    const onData   = okrLabels.map(o => okrMap[o].filter(r => statusOf(r).cls === 'green').length);
+    const inpData  = okrLabels.map(o => okrMap[o].filter(r => statusOf(r).cls === 'amber' || statusOf(r).cls === 'red').length);
+    const pendData = okrLabels.map(o => okrMap[o].filter(r => statusOf(r).cls === 'gray').length);
+    const chartHeight = Math.max(140, okrLabels.length * 38 + 60);
+    const chartId = 'chart_' + di;
+
+    let kpiHTML = '';
+    okrLabels.forEach(okr => {
+      kpiHTML += `<div class="okr-group"><div class="okr-label">${okr}</div><div class="kpi-list">`;
+      okrMap[okr].forEach(r => {
+        const s = statusOf(r);
+        const ic = r['integrity check'] || '';
+        kpiHTML += `<div class="kpi-row-item">
+          <span class="kpi-status-dot" style="background:${dc(s.cls)}"></span>
+          <div class="kpi-info">
+            <div class="kpi-name" title="${r.kpi}">${r.kpi || '—'}</div>
+            <div class="kpi-sub">${s.label}${r.target ? ' · Target: ' + r.target : ''}</div>
+          </div>
+          <div class="kpi-right">
+            ${r.actual ? `<div class="kpi-actual">${r.actual}</div>` : ''}
+            ${intPill(ic)}
+          </div>
+        </div>`;
+      });
+      kpiHTML += `</div></div>`;
+    });
+
+    panel.innerHTML = `
+      <div class="panel-top">
+        <div class="mini-stat"><span class="mini-dot" style="background:${dc('green')}"></span><span class="s-green">${counts.green}</span>&nbsp;on track</div>
+        <div class="mini-stat"><span class="mini-dot" style="background:${dc('amber')}"></span><span class="s-amber">${counts.amber}</span>&nbsp;in progress</div>
+        <div class="mini-stat"><span class="mini-dot" style="background:${dc('red')}"></span><span class="s-red">${counts.red}</span>&nbsp;off track</div>
+        <div class="mini-stat"><span class="mini-dot" style="background:${dc('gray')}"></span><span class="s-gray">${counts.gray}</span>&nbsp;pending</div>
+      </div>
+      <div class="panel-body">
+        <div class="okr-col">${kpiHTML}</div>
+        <div class="chart-col">
+          <div class="chart-head">Status by OKR</div>
+          <div class="legend">
+            <span><span class="leg-sq" style="background:${dc('green')}"></span>On track</span>
+            <span><span class="leg-sq" style="background:${dc('amber')}"></span>In progress</span>
+            <span><span class="leg-sq" style="background:${dc('gray')}"></span>Pending</span>
+          </div>
+          <div style="position:relative;height:${chartHeight}px"><canvas id="${chartId}"></canvas></div>
+        </div>
+      </div>`;
+
+    container.appendChild(panel);
+
+    setTimeout(() => {
+      const el = document.getElementById(chartId);
+      if (!el) return;
+      const c = new Chart(el, {
+        type: 'bar',
+        data: {
+          labels: okrLabels,
+          datasets: [
+            { label: 'On track',    data: onData,   backgroundColor: isDark() ? '#97C459' : '#3B6D11', borderRadius: 3, borderSkipped: false },
+            { label: 'In progress', data: inpData,  backgroundColor: isDark() ? '#EF9F27' : '#BA7517', borderRadius: 3, borderSkipped: false },
+            { label: 'Pending',     data: pendData, backgroundColor: isDark() ? '#444441' : '#D3D1C7', borderRadius: 3, borderSkipped: false }
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+          plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } },
+          scales: {
+            x: { stacked: true, grid: { color: 'rgba(136,135,128,0.12)' }, ticks: { font: { size: 10, family: 'DM Sans' }, color: '#888780', stepSize: 1 } },
+            y: { stacked: true, grid: { display: false }, ticks: { font: { size: 10, family: 'DM Sans' }, color: '#888780' } }
+          }
+        }
+      });
+      charts.push(c);
+    }, 50);
+  });
+}
+
+// ─── SHEET CONNECTION ────────────────────────────────────────────────────────
+// Google Sheets blocks direct browser fetches (CORS). We try the URL directly
+// first (works when hosted on some platforms), then fall back through two
+// public CORS proxies so it works locally and on any static host.
+const PROXIES = [
+  u => u,                                                          // direct — works on Netlify/Vercel
+  u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+  u => `https://corsproxy.io/?${encodeURIComponent(u)}`,
+];
+
+async function fetchCSV(url) {
+  for (const proxy of PROXIES) {
+    try {
+      const res = await fetch(proxy(url), { cache: 'no-store' });
+      if (!res.ok) continue;
+      const text = await res.text();
+      if (text.trim().length > 0) return text;
+    } catch(e) { /* try next proxy */ }
+  }
+  throw new Error('All connection attempts failed. Make sure your sheet is published as CSV (File → Share → Publish to web → CSV).');
+}
+
+let sheetUrl = '';
+
+async function connectSheet() {
+  const url = document.getElementById('sheetUrl').value.trim();
+  if (!url) { alert('Please paste a Google Sheets CSV link first.'); return; }
+  sheetUrl = url;
+  document.getElementById('syncNote').textContent = 'Connecting…';
+  document.getElementById('lastSync').textContent = '';
+  try {
+    const text = await fetchCSV(url);
+    const data = parseCSV(text);
+    if (!data.length) throw new Error('No data rows found. Check your sheet has the correct column headers.');
+    activeTab = 0;
+    renderAll(data);
+    document.getElementById('syncNote').textContent = 'Live — Google Sheets';
+    document.getElementById('lastSync').textContent = 'Last synced: ' + new Date().toLocaleTimeString();
+    if (liveInterval) clearInterval(liveInterval);
+    liveInterval = setInterval(syncSheet, 60000);
+  } catch(e) {
+    document.getElementById('syncNote').textContent = 'Connection failed';
+    document.getElementById('lastSync').textContent = e.message;
+  }
+}
+
+async function syncSheet() {
+  if (!sheetUrl) return;
+  try {
+    const text = await fetchCSV(sheetUrl);
+    const data = parseCSV(text);
+    if (data.length) {
+      renderAll(data);
+      document.getElementById('lastSync').textContent = 'Last synced: ' + new Date().toLocaleTimeString();
+    }
+  } catch(e) {}
+}
+
+function refresh() { renderAll(currentData); }
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+renderAll(parseCSV(EMBEDDED_CSV));
+</script>
+</body>
+</html>
